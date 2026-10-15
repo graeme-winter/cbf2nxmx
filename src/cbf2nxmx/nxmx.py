@@ -288,8 +288,8 @@ def _provenance(f, sweep: Sweep, report: WriteReport, opts: WriteOptions):
     note = _group(f["entry"], "cbf2nxmx", "NXnote")
     info = {
         "converter": f"cbf2nxmx {__version__}",
-        "first_image": str(sweep.files[0]),
-        "last_image": str(sweep.files[-1]),
+        "first_image": sweep.files[0].name,
+        "last_image": sweep.files[-1].name,
         "n_images": sweep.n_images,
         "dtype": report.dtype,
         "saturation_value": report.saturation_value,
