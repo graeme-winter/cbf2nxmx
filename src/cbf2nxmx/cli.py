@@ -17,10 +17,11 @@ IMAGES may be a list of files, a glob ('x_*.cbf'), a template with #
 standing for digits ('x_#####.cbf'), or the first image alone, in which
 case every image numbered after it with the same prefix is taken.
 
-Pixel types: uint16 or uint32. -1 (module gap) becomes 2^n-1 and -2 (bad
-pixel) 2^n-2; both are also recorded in pixel_mask. 'auto' picks uint16 when
-the detector's trusted maximum (count cutoff - 1) fits below the markers,
-otherwise uint32.
+Pixel types: uint16 or int32. In uint16, -1 (module gap) becomes 65535 and
+-2 (bad pixel) 65534. In int32 they stay -1 and -2, the same bits as the
+unsigned markers; uint32 is not offered because dxtbx cannot read it. Both
+are also recorded in pixel_mask. 'auto' picks uint16 when the detector's
+trusted maximum (count cutoff - 1) fits below 65534, otherwise int32.
 """
 
 
@@ -71,7 +72,7 @@ def main(argv=None) -> int:
     )
     ap.add_argument("images", nargs="+")
     ap.add_argument("-o", "--output", required=True, help="the NXmx file to write")
-    ap.add_argument("--dtype", default="auto", choices=["auto", "uint16", "uint32"])
+    ap.add_argument("--dtype", default="auto", choices=["auto", "uint16", "int32"])
     ap.add_argument("--compression", default="bslz4", choices=["bslz4", "lz4", "none"])
     ap.add_argument(
         "--overflow", default="error", choices=["error", "clip"],

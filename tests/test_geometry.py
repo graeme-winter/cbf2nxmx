@@ -113,13 +113,13 @@ def test_vds_split(tmp_path):
     sweep = build_sweep(files)
     out = tmp_path / "v_master.h5"
     rep = write_nxmx(sweep, out, WriteOptions(nproc=2, quiet=True, frames_per_file=2,
-                                               dtype="uint32", compression="lz4"))
+                                               dtype="int32", compression="lz4"))
     assert [p.name for p in rep.data_files] == [
         "v_data_000001.h5", "v_data_000002.h5", "v_data_000003.h5"]
     with h5py.File(out) as f:
         d = f["/entry/data/data"]
-        assert d.is_virtual and d.shape == (5, 40, 30) and d.dtype == np.uint32
-        assert d[4][5, 0] == 2**32 - 1
+        assert d.is_virtual and d.shape == (5, 40, 30) and d.dtype == np.int32
+        assert d[4][5, 0] == -1 and d[4][7, 3] == -2
         assert f["/entry/data/data_000003"].shape == (1, 40, 30)
 
 

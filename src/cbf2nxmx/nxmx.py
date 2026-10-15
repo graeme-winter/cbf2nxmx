@@ -48,7 +48,7 @@ SAMPLE_T = "/entry/sample/transformations"
 
 @dataclass
 class WriteOptions:
-    dtype: str = "auto"  # auto | uint16 | uint32
+    dtype: str = "auto"  # auto | uint16 | int32
     compression: str = "bslz4"  # bslz4 | lz4 | none
     overflow: str = "error"  # error | clip
     nproc: int = 0  # 0: all cores

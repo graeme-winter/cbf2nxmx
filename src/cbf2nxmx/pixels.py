@@ -1,10 +1,15 @@
-"""CBF int32 pixels to an unsigned HDF5 type, DECTRIS-style.
+"""CBF int32 pixels to the HDF5 type written: uint16 or int32.
 
 PILATUS CBF use -1 for pixels in gaps between modules and -2 for bad pixels.
-In an unsigned image the two largest values are the markers, as DECTRIS and
-mxi have it: 2**n - 1 for a gap (a tile join) and 2**n - 2 for a bad pixel.
-For int32 that is exactly the two's-complement bit pattern. The largest real
-count is therefore 2**n - 3.
+
+* int32 (the 32-bit choice): the values pass through unchanged. -1 and -2
+  have the same bit patterns as the DECTRIS/mxi unsigned markers 2**32-1
+  (tile join) and 2**32-2 (bad), and dxtbx cannot read uint32 data at all.
+  No real count comes near 2**31.
+* uint16: -1 becomes 65535 and -2 becomes 65534, the markers, so the largest
+  real count is 65533.
+
+Either way both kinds of pixel are recorded in pixel_mask as well.
 """
 
 from __future__ import annotations
@@ -13,7 +18,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-DTYPES = {"uint16": np.uint16, "uint32": np.uint32}
+DTYPES = {"uint16": np.uint16, "int32": np.int32}
 
 GAP_BIT = 1  # pixel_mask bit 0: gap between modules
 BAD_BIT = 2  # pixel_mask bit 1: dead / bad pixel
@@ -29,21 +34,22 @@ class Policy:
     overflow: str  # "error" | "clip"
 
     @property
-    def maximum(self) -> int:
-        return int(np.iinfo(self.dtype).max)
+    def signed(self) -> bool:
+        return np.issubdtype(self.dtype, np.signedinteger)
 
     @property
     def gap_value(self) -> int:
-        return self.maximum
+        return -1 if self.signed else int(np.iinfo(self.dtype).max)
 
     @property
     def bad_value(self) -> int:
-        return self.maximum - 1
+        return -2 if self.signed else int(np.iinfo(self.dtype).max) - 1
 
     @property
     def top(self) -> int:
-        """The largest count the type can hold below its markers."""
-        return self.maximum - 2
+        """The largest count the type holds (below its markers if unsigned)."""
+        m = int(np.iinfo(self.dtype).max)
+        return m if self.signed else m - 2
 
     def saturation_value(self, overload: int | None) -> int:
         """The largest trusted count: the CBF's overload - 1 (as dxtbx reads
@@ -58,7 +64,10 @@ def choose_dtype(name: str, overload: int | None) -> type:
     if name == "auto":
         if overload is not None and overload - 1 <= np.iinfo(np.uint16).max - 2:
             return np.uint16
-        return np.uint32
+        return np.int32
+    if name == "uint32":
+        raise ValueError("uint32: dxtbx cannot read it; use int32, whose -1 and -2 "
+                         "are the same bits as the unsigned markers")
     if name not in DTYPES:
         raise ValueError(f"dtype {name!r}: choose from auto, {', '.join(DTYPES)}")
     return DTYPES[name]
@@ -80,12 +89,11 @@ def convert(a: np.ndarray, policy: Policy, where: str = "") -> Converted:
         raise OverflowError_(
             f"{where}: {n_over} pixels above {top}, the largest count "
             f"{np.dtype(policy.dtype).name} holds below its markers (max "
-            f"{int(a.max())}); use a wider type or --overflow clip"
+            f"{int(a.max())}); use int32 or --overflow clip"
         )
-    neg = a < 0
-    other = neg & (a != -1) & (a != -2)
+    other = (a < -2)
     src = np.minimum(a, top) if n_over else a  # top < 2**31 whenever n_over
-    out = src.astype(policy.dtype)  # negatives wrap; set explicitly below
+    out = src.astype(policy.dtype)  # negatives wrap for unsigned; set below
     out[a == -1] = policy.gap_value
     out[a == -2] = policy.bad_value
     n_other = int(np.count_nonzero(other))

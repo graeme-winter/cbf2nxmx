@@ -36,21 +36,23 @@ def verify_direct(nxs: str, files, every: int = 1) -> int:
         if data.shape[0] != len(files):
             print(f"{data.shape[0]} frames in {nxs}, {len(files)} images given")
             return 1
-        top = np.iinfo(data.dtype).max
+        from .pixels import Policy
+
+        policy = Policy(data.dtype.type, "clip")
         sat = int(f["/entry/instrument/detector/saturation_value"][()])
         for i in range(0, len(files), every):
             a = read_pixels(read_header(files[i])).astype(np.int64)
             b = data[i].astype(np.int64)
             ok = a >= 0
             problems = []
-            clipped = ok & (a > top - 2)
+            clipped = ok & (a > policy.top)
             if np.any(a[ok & ~clipped] != b[ok & ~clipped]):
                 problems.append(f"{int(np.count_nonzero(a[ok & ~clipped] != b[ok & ~clipped]))} counts differ")
             if np.any(b[clipped] <= sat):
                 problems.append("clipped counts not above saturation_value")
-            if np.any(b[a == -1] != top) or np.any((mask[a == -1] & 1) == 0):
+            if np.any(b[a == -1] != policy.gap_value) or np.any((mask[a == -1] & 1) == 0):
                 problems.append("gap pixels not marked")
-            if np.any(b[a == -2] != top - 1) or np.any((mask[a == -2] & 2) == 0):
+            if np.any(b[a == -2] != policy.bad_value) or np.any((mask[a == -2] & 2) == 0):
                 problems.append("bad pixels not marked")
             if problems:
                 bad += 1

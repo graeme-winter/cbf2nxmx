@@ -27,7 +27,7 @@ def test_against_dials_import(tmp_path, prefix, ref):
     assert files
     sweep = build_sweep(files)
     out = tmp_path / "x.nxs"
-    write_nxmx(sweep, out, WriteOptions(quiet=True, nproc=2, dtype="uint32"))
+    write_nxmx(sweep, out, WriteOptions(quiet=True, nproc=2, dtype="int32"))
     reference = load(str(Path(DATA) / ref / "imported.expt"))
     report = compare(reference, load(str(out)))
     failures = [r for r in report.rows if r[1] == "DIFFERS" and r[0] != "image range"]

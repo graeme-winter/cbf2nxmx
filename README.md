@@ -15,7 +15,7 @@ cbf2nxmx 'x_*.cbf' -o x_master.h5 --frames-per-file 1000   # data files + VDS
 
 | option | default | |
 |---|---|---|
-| `--dtype` | `auto` | `uint16`, `uint32`. `auto` is uint16 when count cutoff - 1 <= 65533, else uint32 |
+| `--dtype` | `auto` | `uint16`, `int32`. `auto` is uint16 when count cutoff - 1 <= 65533, else int32 |
 | `--overflow` | `error` | `clip`: counts above 2^n-3 become 2^n-3, and saturation_value drops below them |
 | `--compression` | `bslz4` | `lz4`, `none`: the three mxi reads; one frame per chunk |
 | `--frames-per-file` | 0 | >0: `<stem>_data_NNNNNN.h5` files, a VDS `/entry/data/data` and `data_NNNNNN` links |
@@ -26,12 +26,19 @@ cbf2nxmx 'x_*.cbf' -o x_master.h5 --frames-per-file 1000   # data files + VDS
 
 ## Pixels
 
-PILATUS CBF use -1 for module gaps and -2 for bad pixels. In the output these
-become 2^n-1 (gap) and 2^n-2 (bad), the DECTRIS/mxi markers, and are also
-recorded in `pixel_mask` (bit 0 gap, bit 1 bad, the union over all frames).
-Other negative values are marked bad, and counted in the provenance note.
-`saturation_value` is the CBF's `_array_intensities.overload` - 1, which is
-dxtbx's trusted maximum for the CBF, capped at 2^n-3.
+PILATUS CBF use -1 for module gaps and -2 for bad pixels.
+
+* **uint16:** these become 65535 (gap) and 65534 (bad), the DECTRIS/mxi
+  markers, so the largest count is 65533.
+* **int32:** they stay -1 and -2, the same bits as the unsigned markers
+  2^32-1 and 2^32-2 that mxi reads. 32-bit data are written signed because
+  dxtbx cannot read uint32, and no count comes near 2^31.
+
+Either way they are also recorded in `pixel_mask` (bit 0 gap, bit 1 bad, the
+union over all frames). Other negative values are marked bad and counted in
+the provenance note. `saturation_value` is the CBF's
+`_array_intensities.overload` - 1, which is dxtbx's trusted maximum for the
+CBF, capped at the type's largest count; `underload_value` is 0.
 
 ## Geometry
 

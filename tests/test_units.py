@@ -116,8 +116,8 @@ def test_pilatus_header():
 
 def test_dtype_choice():
     assert choose_dtype("auto", 65534) is np.uint16
-    assert choose_dtype("auto", 65535) is np.uint32
-    assert choose_dtype("auto", None) is np.uint32
+    assert choose_dtype("auto", 65535) is np.int32
+    assert choose_dtype("auto", None) is np.int32
     assert choose_dtype("uint16", 10**6) is np.uint16
 
 
@@ -132,10 +132,14 @@ def test_convert_markers_and_overflow():
     assert c.data.tolist() == [[65533, 1]]
     p = Policy(np.uint16, "clip")
     assert p.saturation_value(91799) == 65532
-    p = Policy(np.uint32, "error")
+    p = Policy(np.int32, "error")
     assert p.saturation_value(91799) == 91798
-    c = convert(np.array([[-1, -2, 2**31 - 1]], dtype=np.int32), p)
-    assert c.data.tolist() == [[2**32 - 1, 2**32 - 2, 2**31 - 1]]
+    c = convert(np.array([[-1, -2, -9, 2**31 - 1]], dtype=np.int32), p)
+    assert c.data.dtype == np.int32
+    assert c.data.tolist() == [[-1, -2, -2, 2**31 - 1]]
+    assert c.data.view(np.uint32).tolist()[0][:2] == [2**32 - 1, 2**32 - 2]  # mxi's markers
+    with pytest.raises(ValueError, match="int32"):
+        choose_dtype("uint32", None)
 
 
 def test_frames():
