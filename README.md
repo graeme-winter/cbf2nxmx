@@ -64,8 +64,11 @@ cbf2nxmx.verify out.nxs 'x_#####.cbf'                    # pixel round trip, no 
 dials.import out.nxs output.experiments=nxs.expt
 cbf2nxmx.compare cbf.expt nxs.expt                        # geometry, from DIALS
 mxi_import out.nxs -o mxi.expt && cbf2nxmx.compare cbf.expt mxi.expt
-dials.python -m cbf2nxmx.verify out.nxs cbf.expt --dxtbx --every 10   # DIALS' masks and counts
+python3 -m cbf2nxmx.verify out.nxs cbf.expt --dxtbx --every 10   # DIALS' masks and counts
 ```
+
+With the CMake build of DIALS there is no `dials.python`: its `python3` is
+the one with dxtbx, and it needs this package on `PYTHONPATH` or installed.
 
 `cbf2nxmx.compare` also reads an NXmx file directly (`cbf2nxmx.readback`,
 dxtbx's reading rules in numpy). It reports these as expected differences:

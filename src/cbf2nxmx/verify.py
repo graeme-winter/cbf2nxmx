@@ -1,7 +1,7 @@
 """Check an NXmx file's pixels against the CBF images it came from.
 
     cbf2nxmx.verify out.nxs IMAGES... [--every N]
-    dials.python -m cbf2nxmx.verify out.nxs imported.expt --dxtbx [--every N]
+    python3 -m cbf2nxmx.verify out.nxs imported.expt --dxtbx [--every N]
 
 Without --dxtbx, each CBF is decoded here and compared with the HDF5 frame:
 counts must be equal, -1 must be the gap marker (2^n-1), -2 the bad marker

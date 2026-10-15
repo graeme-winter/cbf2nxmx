@@ -227,6 +227,9 @@ def _write_metadata(f: h5py.File, sweep: Sweep, policy: Policy, opts: WriteOptio
     bits = 8 * np.dtype(policy.dtype).itemsize
     _scalar(det, "bit_depth_image", bits, dtype=np.int32)
     _scalar(det, "saturation_value", saturation, dtype=np.int64)
+    # dxtbx takes the trusted range's lower end from underload_value (else
+    # -0x7fffffff); 0 matches what it gives the CBF.
+    _scalar(det, "underload_value", 0, dtype=np.int64)
     if sweep.first.header is not None and sweep.first.header.gain_setting:
         _scalar(det, "gain_setting", sweep.first.header.gain_setting)
 
