@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cbf2nxmx"
+dynamic = ["version"]
+description = "Convert CBF image sweeps (full imgCIF headers) to NXmx HDF5"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "BSD-3-Clause" }
+authors = [{ name = "Graeme Winter", email = "graeme.winter@gmail.com" }]
+dependencies = ["numpy>=1.21", "h5py>=3.0", "hdf5plugin>=4.0"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+cbf2nxmx = "cbf2nxmx.cli:main"
+"cbf2nxmx.compare" = "cbf2nxmx.compare:main"
+"cbf2nxmx.verify" = "cbf2nxmx.verify:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "cbf2nxmx.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]
+testpaths = ["tests"]
